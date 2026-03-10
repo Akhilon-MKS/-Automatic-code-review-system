@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Review Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .result { border: 1px solid #ccc; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .score { font-size: 24px; font-weight: bold; color: #4CAF50; }
+        .issues { margin-top: 20px; }
+        .issue { margin: 10px 0; padding: 10px; border-left: 4px solid; }
+        .error { border-color: #f44336; background-color: #ffebee; }
+        .warning { border-color: #ff9800; background-color: #fff3e0; }
+        .info { border-color: #2196F3; background-color: #e3f2fd; }
+        .suggestions { margin-top: 20px; }
+        .download-links { margin-top: 20px; }
+        a { color: #4CAF50; text-decoration: none; margin-right: 20px; }
+        a:hover { text-decoration: underline; }
+        .code-display { background-color: #f5f5f5; border: 1px solid #ddd; padding: 10px; margin: 20px 0; font-family: 'Courier New', monospace; white-space: pre-wrap; }
+        .line-number { color: #888; margin-right: 10px; }
+        .line-issue { background-color: #ffebee; border-left: 3px solid #f44336; }
+        .line-warning { background-color: #fff3e0; border-left: 3px solid #ff9800; }
+        .line-info { background-color: #e3f2fd; border-left: 3px solid #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Code Review Results</h1>
+        {% for result in results %}
+        <div class="result">
+            <h2>{{ result.filename }}</h2>
+            <div class="score">Quality Score: {{ result.score }}/100</div>
+            <div class="issues">
+                <h3>Issues Found:</h3>
+                {% for issue in result.issues %}
+                <div class="issue {{ issue.type }}">
+                    <strong>{{ issue.type|upper }}</strong>: {{ issue.message }} (Line {{ issue.line }})
+                </div>
+                {% endfor %}
+            </div>
+            <div class="suggestions">
+                <h3>Suggestions:</h3>
+                <ul>
+                    {% for suggestion in result.suggestions %}
+                    <li>{{ suggestion }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="code-display">
+                <h3>Source Code with Line-wise Issues:</h3>
+                {% for i in range(result.code_lines|length) %}
+                <div class="code-line {% if i+1 in result.line_suggestions %}line-{{ result.line_suggestions[i+1][0].split(':')[0].lower() }}{% endif %}">
+                    <span class="line-number">{{ i+1 }}</span>{{ result.code_lines[i] | e }}
+                    {% if i+1 in result.line_suggestions %}
+                    <div class="line-issues">
+                        {% for issue in result.line_suggestions[i+1] %}
+                        <small style="color: #d32f2f;">{{ issue }}</small><br>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        <div class="download-links">
+            <a href="/download/txt">Download TXT Report</a>
+            <a href="/download/pdf">Download PDF Report</a>
+            <a href="/">Analyze More Files</a>
+        </div>
+    </div>
+</body>
+</html>

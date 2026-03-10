@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Analysis Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        .command-display { background-color: #f8f9fa; padding: 20px; border-radius: 5px; border-left: 4px solid #007bff; margin: 20px 0; font-family: monospace; font-size: 16px; }
+        .risk-level { text-align: center; margin: 20px 0; }
+        .risk-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 18px; }
+        .risk-critical { background-color: #dc3545; color: white; }
+        .risk-high { background-color: #fd7e14; color: white; }
+        .risk-medium { background-color: #ffc107; color: black; }
+        .risk-low { background-color: #28a745; color: white; }
+        .issues-section, .suggestions-section { margin: 30px 0; }
+        .issue-item { background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 10px 0; }
+        .issue-critical { background-color: #f8d7da; border-color: #f5c6cb; }
+        .issue-high { background-color: #ffeaa7; border-color: #ffecb5; }
+        .issue-medium { background-color: #d1ecf1; border-color: #bee5eb; }
+        .issue-low { background-color: #d4edda; border-color: #c3e6cb; }
+        .issue-type { font-weight: bold; color: #721c24; }
+        .issue-critical .issue-type { color: #721c24; }
+        .issue-high .issue-type { color: #856404; }
+        .issue-medium .issue-type { color: #0c5460; }
+        .issue-low .issue-type { color: #155724; }
+        .suggestion-item { background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px; padding: 15px; margin: 10px 0; }
+        .suggestion-item::before { content: "💡 "; font-size: 18px; }
+        .back-button { display: inline-block; background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        .back-button:hover { background-color: #5a6268; }
+        .stats { text-align: center; margin: 20px 0; font-size: 18px; }
+        .stats span { font-weight: bold; }
+
+        /* Terminal Styles */
+        .terminal-container {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 20px 0;
+        }
+
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #404040;
+        }
+
+        .terminal-title {
+            color: #f8f8f2;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .terminal-button.red { background-color: #ff5f57; }
+        .terminal-button.yellow { background-color: #ffbd2e; }
+        .terminal-button.green { background-color: #28ca42; }
+
+        .terminal-body {
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #f8f8f2;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+
+        .panels-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: auto;
+            margin: 20px 0;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 350px;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 0;
+            overflow: auto;
+        }
+
+        .code-panel .panel-content {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-display {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100%;
+        }
+
+        .original-code, .corrected-code {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 250px;
+            outline: none;
+            border: none;
+            background: transparent;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            padding: 0;
+        }
+
+        .execute-button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            margin-top: 10px;
+        }
+
+        .execute-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .execute-button i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Command Line Analysis Results</h1>
+
+        <div class="command-display">
+            <strong>Analyzed Command:</strong><br>
+            {{ result.command }}
+        </div>
+
+        <div class="stats">
+            <span>Issues Found: {{ result.total_issues }}</span> |
+            <span>Suggestions: {{ result.total_suggestions }}</span>
+        </div>
+
+        <div class="risk-level">
+            <span class="risk-badge risk-{{ result.risk_level.lower() }}">
+                Risk Level: {{ result.risk_level }}
+            </span>
+        </div>
+
+        {% if result.issues %}
+        <div class="issues-section">
+            <h2>🚨 Security Issues & Warnings</h2>
+            {% for issue in result.issues %}
+            <div class="issue-item issue-{{ issue.risk.lower() }}">
+                <div class="issue-type">{{ issue.type }} - {{ issue.risk }} RISK</div>
+                <div class="issue-message">{{ issue.message }}</div>
+                {% if issue.command_part %}
+                <div class="issue-part"><strong>Problematic part:</strong> <code>{{ issue.command_part }}</code></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if result.suggestions %}
+        <div class="suggestions-section">
+            <h2>💡 Suggestions & Best Practices</h2>
+            {% for suggestion in result.suggestions %}
+            <div class="suggestion-item">
+                {{ suggestion }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not result.issues and not result.suggestions %}
+        <div class="issues-section">
+            <h2>✅ Analysis Complete</h2>
+            <div class="suggestion-item">
+                No security issues or suggestions found. The command appears to be safe, but always double-check before execution.
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Code Correction Terminals -->
+        {% if result.is_code %}
+        <div class="issues-section">
+            <h2>🔧 Suggested Code Corrections</h2>
+
+            <div class="panels-container">
+                <!-- Original Code Terminal -->
+                <div class="panel code-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-code"></i>
+                        Original Code with Issues
+                    </div>
+                    <div class="panel-content">
+                        <div class="code-display">
+                            <pre class="original-code" contenteditable="true">{{ result.command }}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corrected Code Terminal -->
+                <div class="panel corrections-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-edit"></i>
+                        Corrections & Improvements
+                    </div>
+                    <div class="panel-content">
+                        <div class="code-display">
+                            <pre class="corrected-code" contenteditable="true">{{ result.corrected_code }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Code Execution Section -->
+        {% if result.is_code %}
+        <div class="issues-section">
+            <h2>🚀 Execute Code</h2>
+            <div style="text-align: center; margin: 20px 0;">
+                <form action="/run_code" method="post" style="display: inline;">
+                    <input type="hidden" name="code" value="{{ result.command }}">
+                    <button type="submit" class="execute-button">
+                        <i class="fas fa-play"></i> Run Code
+                    </button>
+                </form>
+                <form action="/run_code" method="post" style="display: inline; margin-left: 10px;">
+                    <input type="hidden" name="code" value="{{ result.corrected_code }}">
+                    <button type="submit" class="execute-button" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);">
+                        <i class="fas fa-play"></i> Run Corrected Code
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Report Generation Section -->
+        <div class="issues-section">
+            <h2>📊 Generate Report</h2>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="/download_command_report/txt" class="execute-button" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3); text-decoration: none; display: inline-block; margin-right: 10px;">
+                    <i class="fas fa-file-alt"></i> Download TXT Report
+                </a>
+                <a href="/download_command_report/pdf" class="execute-button" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); text-decoration: none; display: inline-block;">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </a>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-button">← Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

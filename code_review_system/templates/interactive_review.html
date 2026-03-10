@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Code Review - Code Review System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            width: 60px;
+            height: 60px;
+            top: 15%;
+            left: 15%;
+            animation-delay: 1s;
+        }
+
+        .shape-2 {
+            width: 40px;
+            height: 40px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 3s;
+        }
+
+        .shape-3 {
+            width: 80px;
+            height: 80px;
+            bottom: 15%;
+            left: 10%;
+            animation-delay: 5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #667eea;
+            animation: bounceIn 1s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .file-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.2em;
+        }
+
+        .file-info p {
+            color: #666;
+            margin: 0;
+        }
+
+        .panels-container {
+            display: flex;
+            gap: 20px;
+            height: 500px;
+        }
+
+        .output-panel {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .output-panel.show {
+            display: block;
+        }
+
+        .output-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .output-content {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f8f9fa;
+        }
+
+        .output-section {
+            margin-bottom: 15px;
+        }
+
+        .output-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .output-text {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .output-error {
+            color: #dc3545;
+        }
+
+        .run-code-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .run-code-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .run-code-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 0;
+            overflow: auto;
+        }
+
+        .code-panel .panel-content {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-display {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100%;
+        }
+
+        .code-line {
+            display: flex;
+            min-height: 24px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .code-line:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .code-line.error {
+            border-left-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .code-line.warning {
+            border-left-color: #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+
+        .code-line.info {
+            border-left-color: #17a2b8;
+            background: rgba(23, 162, 184, 0.05);
+        }
+
+        .line-number {
+            color: #6c757d;
+            padding: 0 15px 0 10px;
+            min-width: 40px;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .line-content {
+            flex: 1;
+            padding: 0 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .line-issues {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: #dc3545;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 200px;
+            z-index: 10;
+        }
+
+        .corrections-panel .panel-content {
+            padding: 20px;
+        }
+
+        .corrections-textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            color: #333;
+        }
+
+        .corrections-textarea:focus {
+            background: white;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .action-btn.secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .action-btn.secondary:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .issues-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .issues-summary h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .issue-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .issue-item.error { color: #dc3545; }
+        .issue-item.warning { color: #ffc107; }
+        .issue-item.info { color: #17a2b8; }
+
+        .issue-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .error .issue-dot { background: #dc3545; }
+        .warning .issue-dot { background: #ffc107; }
+        .info .issue-dot { background: #17a2b8; }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            .panels-container {
+                flex-direction: column;
+                height: auto;
+                gap: 15px;
+            }
+
+            .panel {
+                height: 400px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .actions-bar {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .action-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">🔍</div>
+            <h1>Interactive Code Review</h1>
+        </div>
+
+        <div class="file-info">
+            <h3>{{ result.filename }}</h3>
+            <p>Quality Score: <strong>{{ result.score }}/100</strong></p>
+        </div>
+
+        <div class="issues-summary">
+            <h4>Issues Summary:</h4>
+            {% for issue in result.issues %}
+            <div class="issue-item {{ issue.type }}">
+                <div class="issue-dot"></div>
+                <span><strong>{{ issue.type|upper }}</strong>: {{ issue.message }} (Line {{ issue.line }})</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="panels-container">
+            <div class="panel code-panel">
+                <div class="panel-header">
+                    <i class="fas fa-code"></i>
+                    Original Code with Issues
+                </div>
+                <div class="panel-content">
+                    <div class="code-display">
+                        {% for i in range(result.code_lines|length) %}
+                        <div class="code-line {% for issue in result.issues %}{% if issue.line == i+1 %}{{ issue.type }}{% endif %}{% endfor %}">
+                            <div class="line-number">{{ i+1 }}</div>
+                            <div class="line-content">{{ result.code_lines[i] | e }}</div>
+                            {% for issue in result.issues %}
+                            {% if issue.line == i+1 %}
+                            <div class="line-issues">
+                                <strong>{{ issue.type|upper }}</strong>: {{ issue.message }}
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel corrections-panel">
+                <div class="panel-header">
+                    <i class="fas fa-edit"></i>
+                    Corrections & Improvements
+                </div>
+                <div class="panel-content">
+                    <textarea class="corrections-textarea" id="corrections-editor" placeholder="Enter your corrections and improvements here...
+
+Suggestions:
+{% for suggestion in result.suggestions %}
+• {{ suggestion }}
+{% endfor %}
+
+You can edit this code to fix the issues shown in the left panel.">{{ result.code_lines | join('\n') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <button class="run-code-btn" id="run-code-btn" onclick="runCode()">
+                <i class="fas fa-play"></i> Run Code
+            </button>
+            <button class="action-btn" onclick="applyCorrections()">
+                <i class="fas fa-magic"></i> Apply AI Corrections
+            </button>
+            <button class="action-btn" onclick="downloadCorrectedCode()">
+                <i class="fas fa-download"></i> Download Corrected Code
+            </button>
+            <a href="/download/txt" class="action-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-file-alt"></i> Download TXT Report
+            </a>
+            <a href="/download/pdf" class="action-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-file-pdf"></i> Download PDF Report
+            </a>
+            <button class="action-btn secondary" onclick="copyToClipboard()">
+                <i class="fas fa-copy"></i> Copy to Clipboard
+            </button>
+            <button class="action-btn secondary" onclick="clearEditor()">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+        </div>
+
+        <div class="output-panel" id="output-panel">
+            <div class="output-header">
+                <i class="fas fa-terminal"></i>
+                Code Execution Output
+            </div>
+            <div class="output-content" id="output-content">
+                <div class="output-section">
+                    <div class="output-label">Output:</div>
+                    <div class="output-text" id="stdout-output">Click "Run Code" to execute the code in the right panel.</div>
+                </div>
+                <div class="output-section">
+                    <div class="output-label output-error">Errors:</div>
+                    <div class="output-text output-error" id="stderr-output">No errors yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/analyze_file" class="back-button">
+                <i class="fas fa-arrow-left"></i> Back to File Analysis
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script>
+        // Auto-resize textarea
+        const textarea = document.getElementById('corrections-editor');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Initialize textarea height
+        textarea.style.height = textarea.scrollHeight + 'px';
+
+        function applyCorrections() {
+            // This would integrate with AI to apply corrections
+            alert('AI corrections feature would be implemented here. For now, you can manually edit the code in the right panel.');
+        }
+
+        function downloadCorrectedCode() {
+            const code = textarea.value;
+            const filename = '{{ result.filename }}';
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'corrected_' + filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function copyToClipboard() {
+            textarea.select();
+            document.execCommand('copy');
+            alert('Code copied to clipboard!');
+        }
+
+        function clearEditor() {
+            if (confirm('Are you sure you want to reset the editor to the original code?')) {
+                textarea.value = `{{ result.code_lines | join('\n') }}`;
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }
+        }
+
+        async function runCode() {
+            const code = textarea.value.trim();
+            const runBtn = document.getElementById('run-code-btn');
+            const outputPanel = document.getElementById('output-panel');
+            const stdoutOutput = document.getElementById('stdout-output');
+            const stderrOutput = document.getElementById('stderr-output');
+
+            if (!code) {
+                alert('Please enter some code to run.');
+                return;
+            }
+
+            // Disable button and show loading
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+
+            try {
+                const response = await fetch('/run_code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'code': code
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    stdoutOutput.textContent = result.output || 'No output';
+                    stderrOutput.textContent = result.error || 'No errors';
+                } else {
+                    stdoutOutput.textContent = 'Error occurred';
+                    stderrOutput.textContent = result.error || 'Unknown error';
+                }
+
+                // Show output panel
+                outputPanel.classList.add('show');
+
+            } catch (error) {
+                stdoutOutput.textContent = 'Network error';
+                stderrOutput.textContent = 'Failed to execute code: ' + error.message;
+                outputPanel.classList.add('show');
+            } finally {
+                // Re-enable button
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
+            }
+        }
+
+        // Highlight code with Prism
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add syntax highlighting to code display
+            const codeElements = document.querySelectorAll('.line-content');
+            codeElements.forEach(element => {
+                element.innerHTML = Prism.highlight(element.textContent, Prism.languages.python, 'python');
+            });
+        });
+    </script>
+</body>
+</html>
